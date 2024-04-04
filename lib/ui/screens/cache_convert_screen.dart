@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:json_to_dart_clean_arch_models/dart_class_generator/helpers.dart';
 
 import '../../dart_class_generator/dart_class_generator.dart';
 import '../../dart_class_generator/dart_code.dart';
@@ -71,7 +72,7 @@ class _CacheConvertScreenState extends State<CacheConvertScreen> {
                   convert: () {
                     try {
                       final classGenerator = DartClassGenerator(
-                        _rootClassNameController.text,
+                        _rootClassNameController.text.capitalize(),
                       );
                       DartCode apiCacheDtosDartCode = classGenerator
                           .generateApiCacheDtoClasses(_fieldController.text);

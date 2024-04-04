@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class LeftSideBar extends StatelessWidget {
   const LeftSideBar({
@@ -50,6 +51,9 @@ class LeftSideBar extends StatelessWidget {
             // focusedErrorBorder: InputBorder.none,
           ),
           style: Theme.of(context).textTheme.bodyLarge,
+          inputFormatters: [
+            FilteringTextInputFormatter.deny(RegExp(r'\s')),
+          ],
         ),
         const SizedBox(height: 16),
         Expanded(

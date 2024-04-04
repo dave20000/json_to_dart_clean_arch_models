@@ -59,13 +59,13 @@ class DartClassGenerator {
           typeDef = TypeDefinition.fromDynamic(jsonRawData[key], node);
         }
         if (typeDef.name == 'Class') {
-          typeDef.name = (key as String).toCamelCase;
+          typeDef.name = (key as String).toCamelCase();
         }
         if (typeDef.name == 'List' && typeDef.subtype == 'Null') {
           warnings.add(newEmptyListWarn('$path/$key'));
         }
         if (typeDef.subtype != null && typeDef.subtype == 'Class') {
-          typeDef.subtype = (key as String).toCamelCase;
+          typeDef.subtype = (key as String).toCamelCase();
         }
         if (typeDef.isAmbiguous) {
           warnings.add(newAmbiguousListWarn('$path/$key'));

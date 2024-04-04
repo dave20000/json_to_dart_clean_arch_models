@@ -69,13 +69,17 @@ class ClassDefinition {
     required bool isModel,
     required bool isCacheDto,
   }) {
-    if (typeDef.isPrimitive || isModel) {
-      sb.write("final ${typeDef.name}");
+    if (typeDef.name == "List") {
+      sb.write("final List");
     } else {
-      if (typeDef.name == "List") {
-        sb.write("final List");
-      } else {
+      if (typeDef.isPrimitive || isModel) {
         sb.write("final ${typeDef.name}");
+      } else if (isCacheDto) {
+        sb.write(
+            "final ${typeDef.name.endsWith("CacheDto") ? typeDef.name : "${typeDef.name}CacheDto"}");
+      } else {
+        sb.write(
+            "final ${typeDef.name.endsWith("ApiDto") ? typeDef.name : "${typeDef.name}ApiDto"}");
       }
     }
     if (typeDef.subtype != null) {
@@ -85,9 +89,7 @@ class ClassDefinition {
         final subTypeDefName = typeDef.subtype!;
         if (isCacheDto) {
           sb.write(
-            subTypeDefName.endsWith("CacheDto")
-                ? subTypeDefName
-                : "${subTypeDefName}CacheDto",
+            '<${subTypeDefName.endsWith("CacheDto") ? subTypeDefName : "${subTypeDefName}CacheDto"}>',
           );
         } else {
           sb.write(
@@ -154,7 +156,7 @@ class ClassDefinition {
       i++;
     }
     sb.write(") = _$name;");
-    sb.write("\n\t\tconst factory $name._();\n\n");
+    sb.write("\n\t\tconst $name._();\n\n");
     return sb.toString();
   }
 
@@ -176,44 +178,29 @@ class ClassDefinition {
       sb.write('? $fieldName;');
       i++;
     }
-    sb.write("\n\n\t\t@HiveField($i)");
-    sb.write("\n\t\t");
-    _addTypeSyntaxString(
-      TypeDefinition("String"),
-      sb,
-      isModel: false,
-      isCacheDto: true,
-    );
-    sb.write('? syncTime;');
+    sb.write("\n\n\t\t@override");
+    sb.write("\n\t\t@HiveField($i)");
+    sb.write("\n\t\tString? syncTime;");
     i++;
-    sb.write("\n\n\t\t@HiveField($i)");
-    sb.write("\n\t\t");
-    _addTypeSyntaxString(
-      TypeDefinition("bool"),
-      sb,
-      isModel: false,
-      isCacheDto: true,
-    );
-    sb.write('? isSynced;');
+    sb.write("\n\n\t\t@override");
+    sb.write("\n\t\t@HiveField($i)");
+    sb.write("\n\t\tbool? isSynced;");
     i++;
 
     sb.write("\n\n\t\t$name(");
     i = 0;
-    var len = fields.keys.length - 1;
     for (var key in fields.keys) {
       if (i == 0) {
         sb.write("{");
       }
       final typeSyntax = fields[key]!;
       final fieldName = fixFieldName(key, typeDef: typeSyntax);
-      sb.write("\n\t\t\t\t");
-      sb.write('this.$fieldName,');
-      if (i == len) {
-        sb.write("\n\t\t}");
-      }
+      sb.write("\n\t\t\t\tthis.$fieldName,");
       i++;
     }
-    sb.write(");");
+    sb.write("\n\t\t\t\tthis.syncTime,");
+    sb.write("\n\t\t\t\tthis.isSynced,");
+    sb.write("\n\t\t});");
     return sb.toString();
   }
 
@@ -231,7 +218,11 @@ class ClassDefinition {
           '\n\t\t\t\t$fieldName: $fieldName?.map((e) => e.toModel()).toList(),',
         );
       } else {
-        sb.write('\n\t\t\t\t$fieldName: $fieldName,');
+        if (typeSyntax.isPrimitive) {
+          sb.write('\n\t\t\t\t$fieldName: $fieldName,');
+        } else {
+          sb.write('\n\t\t\t\t$fieldName: $fieldName?.toModel(),');
+        }
       }
       if (i == len) {
         sb.write("\n\t\t");
@@ -256,7 +247,11 @@ class ClassDefinition {
           '\n\t\t\t\t$fieldName: $fieldName?.map((e) => e.toApiDto()).toList(),',
         );
       } else {
-        sb.write('\n\t\t\t\t$fieldName: $fieldName,');
+        if (typeSyntax.isPrimitive) {
+          sb.write('\n\t\t\t\t$fieldName: $fieldName,');
+        } else {
+          sb.write('\n\t\t\t\t$fieldName: $fieldName?.toApiDto(),');
+        }
       }
       if (i == len) {
         sb.write("\n\t\t");
@@ -281,24 +276,28 @@ class ClassDefinition {
           '\n\t\t\t\t$fieldName: $fieldName?.map((e) => e.toCacheDto()).toList(),',
         );
       } else {
-        sb.write('\n\t\t\t\t$fieldName: $fieldName,');
+        if (typeSyntax.isPrimitive) {
+          sb.write('\n\t\t\t\t$fieldName: $fieldName,');
+        } else {
+          sb.write('\n\t\t\t\t$fieldName: $fieldName?.toCacheDto(),');
+        }
       }
       if (i == len) {
         sb.write("\n\t\t");
       }
       i++;
     }
-    sb.write(")");
+    sb.write(");");
     return sb.toString();
   }
 
   String get apiDto {
     String apiDtoString =
-        "@freezed\nclass $_classApiDtoName with _$_classApiDtoName implements ApiDto<$_classModelName> {\n";
+        "@freezed\nclass $_classApiDtoName with _\$$_classApiDtoName implements ApiDto<$_classModelName> {\n";
     apiDtoString += _freezedConstructor(_classApiDtoName, false).toString();
     StringBuffer sb = StringBuffer();
     sb.write(
-      "\t\tfactory $_classApiDtoName.fromJson(Map<String, dynamic> json) => _${_classApiDtoName}FromJson(json);\n",
+      "\t\tfactory $_classApiDtoName.fromJson(Map<String, dynamic> json) => _\$${_classApiDtoName}FromJson(json);\n",
     );
     apiDtoString += "${sb.toString()}\n$_toModel\n}\n";
     return apiDtoString;
@@ -306,7 +305,7 @@ class ClassDefinition {
 
   String get uiModel {
     String uiModelString =
-        "@freezed\nclass $_classModelName with _$_classModelName implements UiModel<$_classApiDtoName> {\n";
+        "@freezed\nclass $_classModelName with _\$$_classModelName implements UIModel<$_classApiDtoName> {\n";
     uiModelString += _freezedConstructor(_classModelName, true).toString();
     uiModelString += "$_toApiDto\n}\n";
     return uiModelString;
@@ -314,11 +313,11 @@ class ClassDefinition {
 
   String get apiCacheDto {
     String apiDtoString =
-        "@freezed\nclass $_classApiDtoName with _$_classApiDtoName implements ApiCacheDto<$_classCacheDtoName> {\n";
+        "@freezed\nclass $_classApiDtoName with _\$$_classApiDtoName implements ApiCacheDto<$_classCacheDtoName> {\n";
     apiDtoString += _freezedConstructor(_classApiDtoName, false).toString();
     StringBuffer sb = StringBuffer();
     sb.write(
-      "\t\tfactory $_classApiDtoName.fromJson(Map<String, dynamic> json) => _${_classApiDtoName}FromJson(json);\n",
+      "\t\tfactory $_classApiDtoName.fromJson(Map<String, dynamic> json) => _\$${_classApiDtoName}FromJson(json);\n",
     );
     apiDtoString += "${sb.toString()}$_toCacheDto\n}\n";
     return apiDtoString;
@@ -326,11 +325,11 @@ class ClassDefinition {
 
   String get cacheDto {
     String cacheDtoString =
-        "@HiveType(typeId: AppConstants.${_classModelName.toLowerCase()}AdapterId)\n";
+        "@HiveType(typeId: AppConstants.${_classModelName.toFirstCharLowerCase()}AdapterId)\n";
     cacheDtoString +=
         "class $_classCacheDtoName with HiveObjectMixin implements CacheDto<$_classModelName,$_classApiDtoName> {\n";
     cacheDtoString +=
-        "\t\tstatic String boxKey = AppConstants.${_classModelName.toLowerCase()}BoxKey;";
+        "\t\tstatic String boxKey = AppConstants.${_classModelName.toFirstCharLowerCase()}BoxKey;";
     cacheDtoString += _hiveFieldsAndConstructor(_classCacheDtoName).toString();
     cacheDtoString +=
         "\n\n\t\t@override\n\t\tString get number => id.toString(); //Update id to your unique value\n\n$_toModel\n\n$_toApiDto\n}\n";
@@ -339,7 +338,7 @@ class ClassDefinition {
 
   String get uiCacheModel {
     String uiModelString =
-        "@freezed\nclass $_classModelName with _$_classModelName implements UiModel<$_classCacheDtoName> {\n";
+        "@freezed\nclass $_classModelName with _\$$_classModelName implements UICacheModel<$_classCacheDtoName> {\n";
     uiModelString += _freezedConstructor(_classModelName, true).toString();
     uiModelString += "$_toCacheDto\n}\n";
     return uiModelString;
@@ -355,7 +354,7 @@ class Dependency {
 
   Dependency(this.name, this.typeDef);
 
-  String get className => name.toCamelCase;
+  String get className => name.toCamelCase();
 }
 
 class TypeDefinition {

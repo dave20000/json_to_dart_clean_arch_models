@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:json_to_dart_clean_arch_models/dart_class_generator/helpers.dart';
+import 'package:json_to_dart_clean_arch_models/dart_class_generator/string_extension.dart';
 
 import '../../dart_class_generator/dart_class_generator.dart';
 import '../../dart_class_generator/dart_code.dart';

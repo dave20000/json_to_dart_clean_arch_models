@@ -176,7 +176,7 @@ String fixFieldName(
     final firstCharType = typeDef.name.substring(0, 1).toLowerCase();
     properName = '$firstCharType$name';
   }
-  final fieldName = properName.toCamelCaseFirstLower;
+  final fieldName = properName.toCamelCaseFirstLower();
 
   return fieldName;
 }

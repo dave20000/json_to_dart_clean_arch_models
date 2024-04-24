@@ -2,7 +2,7 @@ name: json_to_dart_clean_arch_models
 description: "Flutter project to create clean architecture models from json"
 publish_to: "none"
 
-version: 1.0.0+2
+version: 1.0.0+3
 
 environment:
   sdk: ">=3.3.0 <4.0.0"

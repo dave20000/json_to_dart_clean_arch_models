@@ -68,7 +68,12 @@ class ClassDefinition {
     StringBuffer sb, {
     required bool isModel,
     required bool isCacheDto,
+    String? jsonKey,
   }) {
+    if (!isModel && !isCacheDto && jsonKey != null) {
+      sb.write('@JsonKey(name: "$jsonKey") ');
+    }
+
     if (typeDef.name == "List") {
       sb.write("final List");
     } else {
@@ -147,6 +152,7 @@ class ClassDefinition {
         sb,
         isModel: isModel,
         isCacheDto: false,
+        jsonKey: key,
       );
       sb.write('? $fieldName,');
 
